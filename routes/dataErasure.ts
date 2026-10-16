@@ -102,7 +102,17 @@ router.post('/', (req: Request<Record<string, unknown>, Record<string, unknown>,
 
       if (req.body.layout) {
         const filePath: string = path.resolve(req.body.layout).toLowerCase()
-        const isForbiddenFile: boolean = (filePath.includes('ftp') || filePath.includes('ctf.key') || filePath.includes('encryptionkeys'))
+        const viewsPath: string = path.resolve('views').toLowerCase()
+        const viewsPathAlt: string = path.resolve(__dirname, '../views').toLowerCase()
+        const resolvedInViews: string = path.resolve(viewsPath, req.body.layout).toLowerCase()
+        const resolvedInViewsAlt: string = path.resolve(viewsPathAlt, req.body.layout).toLowerCase()
+        const isInViews: boolean = filePath.startsWith(viewsPath + path.sep) ||
+          filePath.startsWith(viewsPathAlt + path.sep) ||
+          resolvedInViews.startsWith(viewsPath + path.sep) ||
+          resolvedInViewsAlt.startsWith(viewsPathAlt + path.sep)
+        const isForbiddenFile: boolean = !isInViews ||
+          (filePath.includes('ftp') || filePath.includes('ctf.key') || filePath.includes('encryptionkeys')) ||
+          (resolvedInViews.includes('ftp') || resolvedInViews.includes('ctf.key') || resolvedInViews.includes('encryptionkeys'))
         if (!isForbiddenFile) {
           res.render('dataErasureResult', {
             ...req.body,
@@ -120,6 +130,7 @@ router.post('/', (req: Request<Record<string, unknown>, Record<string, unknown>,
           next(new Error('File access not allowed'))
         }
       } else {
+        delete (req.body as Record<string, unknown>).layout
         res.render('dataErasureResult', {
           ...req.body,
           ...themeVars
